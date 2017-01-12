@@ -1,0 +1,80 @@
+import unittest
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.python.client import device_lib
+
+class Test{{op_name}}(unittest.TestCase):
+    """ Tests the {{op_name}} operator """
+
+    def setUp(self):
+        # Load the custom operation library
+        self.{{library}} = tf.load_op_library('{{shared_library}}')
+        # Obtain a list of GPU device specifications ['/gpu:0', '/gpu:1', ...]
+        self.gpu_devs = [d.name for d in device_lib.list_local_devices()
+                                if d.device_type == 'GPU']
+
+    def test_{{py_op_name}}(self):
+        """ Test the {{op_name}} operator """
+        {%- set base_permute_types = op_type_attrs | map(attribute="name") | list %}
+        {%- set permute_types = base_permute_types | join(", ") | trim %}
+
+        {%- if op_np_type_perms | length > 0 %}
+        # List of type constraint for testing this operator
+        {% set comma = last_joiner(",") -%}
+        type_permutations = [
+        {%- for perm in op_np_type_perms %}
+        {{ perm | replace("'", "") | indent(4, True) }}{{comma(loop.last)}}
+        {%- endfor -%}
+        ]
+
+        # Run test with the type combinations above
+        for {{ permute_types }} in type_permutations:
+            self._impl_test_{{py_op_name}}({{ permute_types }})
+        {%- else %}
+        self._impl_test_{{py_op_name}}()
+        {%- endif %}
+
+    {% set permute_types = ["self"] + base_permute_types -%}
+    {% set permute_types =  permute_types | join(", ") -%}
+    def _impl_test_{{py_op_name}}({{permute_types}}):
+        """ Implementation of the {{op_name}} operator test """
+
+        # Create input variables
+        {% for op in op_inputs -%}
+        {{op.name}} = np.random.random(size={{op.shape | replace('None', '1')}}).astype({{op.np_type}})
+        {% endfor %}
+
+        {% set arg_names = op_inputs | map(attribute="name") | format_list("'%s'")  -%}
+        {% set arg_names = "arg_names = [" + arg_names | join(", ") + "]" -%}
+        {%- set np_args = op_inputs | map(attribute="name") | join(", ") -%}
+        {%- set np_args = "np_args = [" + np_args + "]" -%}
+
+        # Argument list
+        {{ np_args | wordwrap(79-16) | indent(12)}}
+        # Argument string name list
+        {{ arg_names | wordwrap(79-16) | indent(12) }}
+        # Constructor tensorflow variables
+        tf_args = [tf.Variable(v, name=n) for v, n in zip(np_args, arg_names)]
+
+        def _pin_op(device, *tf_args):
+            """ Pin operation to device """
+            with tf.device(device):
+                return self.{{library}}.{{py_op_name}}(*tf_args)
+
+        # Pin operation to CPU
+        cpu_op = _pin_op('/cpu:0', *tf_args)
+
+        # Run the op on all GPUs
+        gpu_ops = [_pin_op(d, *tf_args) for d in self.gpu_devs]
+
+        # Initialise variables
+        init_op = tf.global_variables_initializer()
+
+        with tf.Session() as S:
+            S.run(init_op)
+            S.run(cpu_op)
+            S.run(gpu_ops)
+
+if __name__ == "__main__":
+    unittest.main()

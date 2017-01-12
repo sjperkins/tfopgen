@@ -1,0 +1,13 @@
+---
+project: tensorflow
+library: custom
+name: Custom
+inputs:
+  - ["input: int32", [100, null]]
+outputs:
+  - ["output: int32", [10, 10]]
+type_attrs:
+  - "FT: {float, double} = DT_FLOAT"
+other_attrs: []
+doc: "How now brown cow"
+

@@ -1,0 +1,3 @@
+recursive-include tfopgen templates/*.j2
+recursive-include tfopgen examples/*.yml
+include LICENSE.txt

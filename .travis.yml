@@ -1,0 +1,38 @@
+dist: trusty
+language: python
+
+# Need a modern C++11 compiler
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - g++-5
+            - gcc-5
+
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
+
+install:
+  - export CXX="g++-5" CC="gcc-5"
+  - pip install tensorflow
+  - pip install .
+
+# command to run tests
+script:
+  # Create a test directory and change to it
+  - mkdir -p $TRAVIS_BUILD_DIR/test
+
+  # Test the simple custom operator
+  - cd $TRAVIS_BUILD_DIR/test
+  - tfopgen $TRAVIS_BUILD_DIR/tfopgen/examples/simple.yml
+  - export LD_LIBRARY_PATH=$TRAVIS_BUILD_DIR/test/custom:$LD_LIBRARY_PATH
+  - cd $TRAVIS_BUILD_DIR/test/custom && make && python test_custom.py
+
+  # Test the complex phase operator
+  - cd $TRAVIS_BUILD_DIR/test
+  - tfopgen $TRAVIS_BUILD_DIR/tfopgen/examples/complex_phase.yml
+  - export LD_LIBRARY_PATH=$TRAVIS_BUILD_DIR/test/fourier:$LD_LIBRARY_PATH
+  - cd $TRAVIS_BUILD_DIR/test/fourier && make && python test_complex_phase.py
