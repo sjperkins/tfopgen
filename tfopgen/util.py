@@ -96,7 +96,8 @@ def parse_inout(s, shape):
     TF_TYPES = _TYPE_TO_STRING.values()
     tf_type = "tensorflow::" + type_ if type_ in TF_TYPES else type_
     np_type = ("np." + _TF_TO_NP[_STRING_TO_TF[type_]].__name__
-               if type_ in _STRING_TO_TF else type_)
+               if type_ in _STRING_TO_TF
+               else "np." + type_)
 
     # Set a default shape for variable if None exists
     shape = (1024, ) if shape is None else shape
@@ -130,7 +131,9 @@ def parse_attr_type(s):
         _TF_TO_NP)
 
     TF_TYPES = _TYPE_TO_STRING.values()
-    tf_types = tuple("tensorflow::" + t if t in TF_TYPES else t for t in types)
+    tf_types = tuple("tensorflow::" + t
+                    if t in TF_TYPES
+                    else t for t in types)
     np_types = ["np." + _TF_TO_NP[_STRING_TO_TF[t]].__name__
                 if t in _STRING_TO_TF
                 else "np." + t for t in types]
