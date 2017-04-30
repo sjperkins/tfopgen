@@ -115,14 +115,14 @@ def parse_attr_type(s):
 
     # Separate types into "{float, double}", "DT_FLOAT64"
     split = types.split("=")
-    default = None if len(split) > 1 else split[1].strip()
+    default = split[1].strip() if len(split) > 1 else None
     types = split[0].strip()
 
     # Handle the multiple types case
     if types.startswith("{") and types.endswith("}"):
         types = tuple(c.strip() for c in types[1:-1].split(","))
     else:
-        types = tuple(types,)
+        types = (types,)
 
     from tensorflow.python.framework.dtypes import (
         _STRING_TO_TF,
@@ -132,6 +132,7 @@ def parse_attr_type(s):
     TF_TYPES = _TYPE_TO_STRING.values()
     tf_types = tuple("tensorflow::" + t if t in TF_TYPES else t for t in types)
     np_types = ["np." + _TF_TO_NP[_STRING_TO_TF[t]].__name__
-                if t in _STRING_TO_TF else type_ for t in types]
+                if t in _STRING_TO_TF
+                else "np." + t for t in types]
 
     return Attr(s, var, types, tf_types, np_types, default)
